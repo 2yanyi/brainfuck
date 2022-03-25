@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"os"
 )
@@ -27,12 +26,12 @@ type opcode struct {
 	jump int
 }
 
-func compile(input []rune) ([]opcode, error) {
+func compile(input string) ([]opcode, error) {
 	program := make([]opcode, 0, 100)
 	stack := make([]int, 0, 100)
 	jump := 0
 	pc := 0
-	for _, char := range input {
+	for _, char := range []rune(input) {
 		switch char {
 		case _OPR:
 			program = append(program, opcode{code: _OPR})
@@ -53,8 +52,9 @@ func compile(input []rune) ([]opcode, error) {
 			if len(stack) == 0 {
 				return nil, compileError
 			}
-			jump = stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
+			index := len(stack) - 1
+			jump = stack[index]
+			stack = stack[:index]
 			program = append(program, opcode{code: _OJB, jump: jump})
 			program[jump].jump = pc
 		default:
@@ -70,7 +70,7 @@ func compile(input []rune) ([]opcode, error) {
 
 func execute(program []opcode) {
 	reader := bufio.NewReader(os.Stdin)
-	data := make([]int, math.MaxUint16)
+	data := make([]rune, math.MaxUint16)
 	dataPtr := 0
 	for i := 0; i < len(program); i++ {
 		switch program[i].code {
@@ -89,7 +89,7 @@ func execute(program []opcode) {
 			if err != nil {
 				panic(compileError)
 			}
-			data[dataPtr] = int(value)
+			data[dataPtr] = rune(value)
 		case _OJF:
 			if data[dataPtr] == 0 {
 				i = program[i].jump
@@ -105,7 +105,7 @@ func execute(program []opcode) {
 }
 
 func run(code string) {
-	program, err := compile([]rune(code))
+	program, err := compile(code)
 	if err != nil {
 		panic(err)
 	}
@@ -113,11 +113,11 @@ func run(code string) {
 }
 
 func main() {
-	run(cat("testdata/hello_world.bf"))
+	//run(cat("testdata/hello_world.bf"))
 	run(cat("testdata/mandelbrot.bf"))
 }
 
 func cat(fp string) string {
-	data, _ := ioutil.ReadFile(fp)
+	data, _ := os.ReadFile(fp)
 	return string(data)
 }
